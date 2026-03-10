@@ -19,19 +19,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu, macos]
+        os: [ubuntu, macos, windows]
         ruby-version: ['2.6', '2.7', '3.0', '3.1', '3.2', '3.3', '3.4', head, debug, truffleruby]
+        exclude:
+          - os: windows
+            ruby-version: debug
+          - os: windows
+            ruby-version: truffleruby
     continue-on-error: ${{ endsWith(matrix.ruby, 'head') || matrix.ruby == 'debug' }}
     steps:
     - uses: actions/checkout@v3
-    - name: Install libcurl header
+    - name: Install libcurl (Ubuntu)
+      if: matrix.os == 'ubuntu'
       run: |
-        if ${{ matrix.os == 'macos' }}
-        then
-          brew install curl
-        else
-          sudo apt update && sudo apt install -y --no-install-recommends libcurl4-openssl-dev
-        fi
+        sudo apt update && sudo apt install -y --no-install-recommends libcurl4-openssl-dev
+    - name: Install libcurl (macOS)
+      if: matrix.os == 'macos'
+      run: |
+        brew install curl
+    - name: Install libcurl (Windows)
+      if: matrix.os == 'windows'
+      run: |
+        ridk exec pacman -S --noconfirm mingw-w64-ucrt-x86_64-curl mingw-w64-x86_64-curl
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
